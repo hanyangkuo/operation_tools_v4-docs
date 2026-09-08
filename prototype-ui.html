@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Operation Tools — UI Prototype (THROWAWAY)</title>
+<!-- MUI + React CDN -->
+<script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+<script crossorigin src="https://unpkg.com/@mui/material@5/umd/material-ui.development.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body, #root { height: 100%; width: 100%; }
+  body { font-family: 'Roboto', sans-serif; background: #f5f5f5; }
+
+  /* Floating switcher bar */
+  .prototype-switcher {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    background: #1a1a2e; color: #fff; border-radius: 999px;
+    display: flex; align-items: center; gap: 12px; padding: 8px 20px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 9999;
+    font-size: 14px; user-select: none;
+  }
+  .prototype-switcher button {
+    background: none; border: none; color: #fff; cursor: pointer;
+    font-size: 20px; line-height: 1; padding: 4px 8px; border-radius: 4px;
+  }
+  .prototype-switcher button:hover { background: rgba(255,255,255,0.15); }
+  .prototype-switcher .label { font-weight: 500; min-width: 200px; text-align: center; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+// ============================================================
+// PROTOTYPE — Three variants of the Operation Tools main page
+// switchable via ?variant= URL param and floating bottom bar.
+// THROWAWAY CODE — do not ship.
+// ============================================================
+
+const {
+  AppBar, Toolbar, Typography, Select, MenuItem, FormControl, InputLabel,
+  TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
+  TableRow, Paper, TablePagination, Snackbar, Alert, Box, Container,
+  Card, CardContent, CardHeader, Divider, IconButton, InputAdornment,
+  Grid, Chip, Stack, Avatar, Tabs, Tab, Drawer, List, ListItem,
+  ListItemIcon, ListItemText, ListItemButton, Tooltip, Fab,
+  Dialog, DialogTitle, DialogContent, DialogActions,
+} = MaterialUI;
+
+// ── Mock Data ──
+const MOCK_DBS = [
+  { id: 'db1', name: 'Oracle Production (TW)' },
+  { id: 'db2', name: 'Oracle Staging (JP)' },
+  { id: 'db3', name: 'Oracle Dev (US)' },
+];
+
+const MOCK_ROWS = [
+  { id: 1, groupName: 'Admin Group', account: 'admin01', createdBy: 'KUO HAN YANG', createdAt: '2026-08-15 10:30:00' },
+  { id: 2, groupName: 'Admin Group', account: 'admin02', createdBy: 'KUO HAN YANG', createdAt: '2026-08-16 14:20:00' },
+  { id: 3, groupName: 'Dev Team', account: 'dev_user', createdBy: 'KUO HAN YANG', createdAt: '2026-08-17 09:00:00' },
+  { id: 4, groupName: 'QA Team', account: 'qa_lead', createdBy: 'KUO HAN YANG', createdAt: '2026-08-18 11:45:00' },
+  { id: 5, groupName: 'Ops Team', account: 'ops_admin', createdBy: 'KUO HAN YANG', createdAt: '2026-08-19 16:10:00' },
+  { id: 6, groupName: 'Dev Team', account: 'dev_intern', createdBy: 'KUO HAN YANG', createdAt: '2026-08-20 08:30:00' },
+  { id: 7, groupName: 'Security', account: 'sec_audit', createdBy: 'KUO HAN YANG', createdAt: '2026-08-21 13:00:00' },
+  { id: 8, groupName: 'DBA Team', account: 'dba_master', createdBy: 'KUO HAN YANG', createdAt: '2026-08-22 10:00:00' },
+  { id: 9, groupName: 'Monitoring', account: 'mon_reader', createdBy: 'KUO HAN YANG', createdAt: '2026-08-23 15:30:00' },
+  { id: 10, groupName: 'Dev Team', account: 'dev_senior', createdBy: 'KUO HAN YANG', createdAt: '2026-08-24 09:15:00' },
+  { id: 11, groupName: 'QA Team', account: 'qa_auto', createdBy: 'KUO HAN YANG', createdAt: '2026-08-25 11:00:00' },
+  { id: 12, groupName: 'Admin Group', account: 'admin03', createdBy: 'KUO HAN YANG', createdAt: '2026-08-26 14:45:00' },
+  { id: 13, groupName: 'Ops Team', account: 'ops_oncall', createdBy: 'KUO HAN YANG', createdAt: '2026-08-27 08:00:00' },
+  { id: 14, groupName: 'Release', account: 'rel_mgr', createdBy: 'KUO HAN YANG', createdAt: '2026-08-28 10:30:00' },
+  { id: 15, groupName: 'Dev Team', account: 'dev_junior', createdBy: 'KUO HAN YANG', createdAt: '2026-08-29 16:00:00' },
+  { id: 16, groupName: 'Security', account: 'sec_pen', createdBy: 'KUO HAN YANG', createdAt: '2026-08-30 09:30:00' },
+  { id: 17, groupName: 'DBA Team', account: 'dba_backup', createdBy: 'KUO HAN YANG', createdAt: '2026-08-31 12:00:00' },
+  { id: 18, groupName: 'Monitoring', account: 'mon_alert', createdBy: 'KUO HAN YANG', createdAt: '2026-09-01 14:00:00' },
+  { id: 19, groupName: 'QA Team', account: 'qa_manual', createdBy: 'KUO HAN YANG', createdAt: '2026-09-02 10:15:00' },
+  { id: 20, groupName: 'Dev Team', account: 'dev_arch', createdBy: 'KUO HAN YANG', createdAt: '2026-09-03 08:45:00' },
+  { id: 21, groupName: 'Admin Group', account: 'admin_super', createdBy: 'KUO HAN YANG', createdAt: '2026-09-03 11:30:00' },
+  { id: 22, groupName: 'Ops Team', account: 'ops_deploy', createdBy: 'KUO HAN YANG', createdAt: '2026-09-03 13:00:00' },
+];
+
+const MOCK_USER = 'KUO HAN YANG';
+
+// ── Shared hooks ──
+function useFormState() {
+  const [groupName, setGroupName] = React.useState('');
+  const [account, setAccount] = React.useState('');
+  const [password, setPassword] = React.useState('');
+  const [errors, setErrors] = React.useState({});
+  const [snackbar, setSnackbar] = React.useState({ open: false, message: '', severity: 'success' });
+
+  const validate = () => {
+    const e = {};
+    if (!groupName.trim()) e.groupName = '群組名稱為必填';
+    if (!account.trim()) e.account = '帳號為必填';
+    if (!password.trim()) e.password = '密碼為必填';
+    if (groupName.length > 100) e.groupName = '群組名稱不能超過 100 字元';
+    if (account.length > 100) e.account = '帳號不能超過 100 字元';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = () => {
+    if (!validate()) return;
+    // Check uniqueness against mock data
+    const dup = MOCK_ROWS.find(r => r.groupName === groupName.trim() && r.account === account.trim());
+    if (dup) {
+      setSnackbar({ open: true, message: `群組「${groupName}」+ 帳號「${account}」已存在`, severity: 'error' });
+      return;
+    }
+    setSnackbar({ open: true, message: '新增成功！', severity: 'success' });
+    setGroupName(''); setAccount(''); setPassword(''); setErrors({});
+  };
+
+  return { groupName, setGroupName, account, setAccount, password, setPassword, errors, snackbar, setSnackbar, handleSubmit };
+}
+
+function useTableState() {
+  const [filter, setFilter] = React.useState('');
+  const [page, setPage] = React.useState(0);
+  const rowsPerPage = 20;
+
+  const filtered = MOCK_ROWS.filter(r =>
+    r.groupName.toLowerCase().includes(filter.toLowerCase()) ||
+    r.account.toLowerCase().includes(filter.toLowerCase())
+  );
+  const paged = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+  return { filter, setFilter, page, setPage, rowsPerPage, filtered, paged };
+}
+
+// ================================================================
+// VARIANT A — Classic Top-Down Layout
+// Full-width horizontal flow: AppBar → DB selector → Form → Table
+// Clean, enterprise-style, everything stacked vertically
+// ================================================================
+function VariantA() {
+  const [selectedDb, setSelectedDb] = React.useState('');
+  const form = useFormState();
+  const table = useTableState();
+
+  return (
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f5f5' }}>
+      {/* AppBar */}
+      <AppBar position="static" sx={{ bgcolor: '#1976d2' }}>
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 600 }}>
+            🔧 Operation Tools
+          </Typography>
+          <Chip
+            avatar={<Avatar sx={{ bgcolor: '#fff', color: '#1976d2' }}>K</Avatar>}
+            label={MOCK_USER}
+            sx={{ color: '#fff', borderColor: 'rgba(255,255,255,0.5)' }}
+            variant="outlined"
+          />
+        </Toolbar>
+      </AppBar>
+
+      <Container maxWidth="lg" sx={{ py: 3 }}>
+        {/* DB Selector */}
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <FormControl fullWidth size="small">
+            <InputLabel>選擇 Oracle DB</InputLabel>
+            <Select value={selectedDb} onChange={e => setSelectedDb(e.target.value)} label="選擇 Oracle DB">
+              {MOCK_DBS.map(db => (
+                <MenuItem key={db.id} value={db.id}>{db.name}</MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Paper>
+
+        {selectedDb && (
+          <>
+            {/* Block 1: Form */}
+            <Paper sx={{ p: 3, mb: 3 }}>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 500 }}>
+                📝 新增帳號
+              </Typography>
+              <Divider sx={{ mb: 2 }} />
+              <Grid container spacing={2} alignItems="flex-start">
+                <Grid item xs={12} sm={4}>
+                  <TextField fullWidth size="small" label="群組名稱" value={form.groupName}
+                    onChange={e => form.setGroupName(e.target.value)}
+                    error={!!form.errors.groupName} helperText={form.errors.groupName} />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <TextField fullWidth size="small" label="帳號" value={form.account}
+                    onChange={e => form.setAccount(e.target.value)}
+                    error={!!form.errors.account} helperText={form.errors.account} />
+                </Grid>
+                <Grid item xs={12} sm={3}>
+                  <TextField fullWidth size="small" label="密碼" type="password" value={form.password}
+                    onChange={e => form.setPassword(e.target.value)}
+                    error={!!form.errors.password} helperText={form.errors.password} />
+                </Grid>
+                <Grid item xs={12} sm={1} sx={{ display: 'flex', alignItems: 'flex-start' }}>
+                  <Button variant="contained" fullWidth onClick={form.handleSubmit}
+                    sx={{ height: 40 }}>
+                    送出
+                  </Button>
+                </Grid>
+              </Grid>
+            </Paper>
+
+            {/* Block 2: Table */}
+            <Paper sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                  📋 帳號列表
+                </Typography>
+                <TextField size="small" placeholder="搜尋群組名稱或帳號…"
+                  value={table.filter} onChange={e => { table.setFilter(e.target.value); table.setPage(0); }}
+                  sx={{ width: 300 }}
+                  InputProps={{
+                    startAdornment: <InputAdornment position="start"><span className="material-icons" style={{fontSize:20}}>search</span></InputAdornment>
+                  }}
+                />
+              </Box>
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: '#f0f0f0' }}>
+                      <TableCell sx={{ fontWeight: 600 }}>#</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>群組名稱</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>帳號</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>創建者</TableCell>
+                      <TableCell sx={{ fontWeight: 600 }}>創建時間</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {table.paged.map((row, i) => (
+                      <TableRow key={row.id} hover>
+                        <TableCell>{table.page * table.rowsPerPage + i + 1}</TableCell>
+                        <TableCell>{row.groupName}</TableCell>
+                        <TableCell><code>{row.account}</code></TableCell>
+                        <TableCell>{row.createdBy}</TableCell>
+                        <TableCell>{row.createdAt}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <TablePagination
+                component="div" count={table.filtered.length} page={table.page}
+                onPageChange={(_, p) => table.setPage(p)}
+                rowsPerPage={table.rowsPerPage} rowsPerPageOptions={[20]}
+                labelDisplayedRows={({from, to, count}) => `${from}–${to} / 共 ${count} 筆`}
+              />
+            </Paper>
+          </>
+        )}
+      </Container>
+
+      <Snackbar open={form.snackbar.open} autoHideDuration={3000}
+        onClose={() => form.setSnackbar({...form.snackbar, open: false})}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity={form.snackbar.severity} variant="filled">{form.snackbar.message}</Alert>
+      </Snackbar>
+    </Box>
+  );
+}
+
+// ================================================================
+// VARIANT B — Left Sidebar + Split Panel
+// Sidebar holds DB list as navigation; main area splits form (top)
+// and table (bottom) in a dashboard-like layout with cards
+// ================================================================
+function VariantB() {
+  const [selectedDb, setSelectedDb] = React.useState('');
+  const form = useFormState();
+  const table = useTableState();
+  const drawerWidth = 260;
+
+  return (
+    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Sidebar */}
+      <Drawer variant="permanent" sx={{
+        width: drawerWidth, flexShrink: 0,
+        '& .MuiDrawer-paper': { width: drawerWidth, bgcolor: '#1a237e', color: '#fff' }
+      }}>
+        <Box sx={{ p: 2, borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, color: '#fff' }}>
+            ⚙️ Operation Tools
+          </Typography>
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>
+            Multi-Region System
+          </Typography>
+        </Box>
+
+        <Box sx={{ p: 2 }}>
+          <Typography variant="overline" sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>
+            DATABASE CONNECTIONS
+          </Typography>
+        </Box>
+        <List sx={{ px: 1 }}>
+          {MOCK_DBS.map(db => (
+            <ListItem key={db.id} disablePadding sx={{ mb: 0.5 }}>
+              <ListItemButton selected={selectedDb === db.id}
+                onClick={() => setSelectedDb(db.id)}
+                sx={{
+                  borderRadius: 1,
+                  '&.Mui-selected': { bgcolor: 'rgba(255,255,255,0.15)' },
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.08)' },
+                }}>
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  <span className="material-icons" style={{ color: selectedDb === db.id ? '#64b5f6' : 'rgba(255,255,255,0.5)', fontSize: 20 }}>
+                    storage
+                  </span>
+                </ListItemIcon>
+                <ListItemText primary={db.name}
+                  primaryTypographyProps={{ fontSize: 13, color: '#fff' }} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+
+        <Box sx={{ mt: 'auto', p: 2, borderTop: '1px solid rgba(255,255,255,0.12)' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Avatar sx={{ width: 32, height: 32, bgcolor: '#64b5f6', fontSize: 14 }}>K</Avatar>
+            <Box>
+              <Typography variant="body2" sx={{ color: '#fff', fontSize: 12 }}>{MOCK_USER}</Typography>
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontSize: 10 }}>已登入</Typography>
+            </Box>
+          </Box>
+        </Box>
+      </Drawer>
+
+      {/* Main content */}
+      <Box sx={{ flexGrow: 1, bgcolor: '#f4f6f8', p: 3 }}>
+        {!selectedDb ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '80vh', color: '#999' }}>
+            <Box sx={{ textAlign: 'center' }}>
+              <span className="material-icons" style={{ fontSize: 64, color: '#ccc' }}>dns</span>
+              <Typography variant="h6" sx={{ mt: 2, color: '#999' }}>請從左側選擇一個 Database</Typography>
+            </Box>
+          </Box>
+        ) : (
+          <>
+            <Typography variant="h5" sx={{ fontWeight: 600, mb: 0.5 }}>
+              {MOCK_DBS.find(d => d.id === selectedDb)?.name}
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#888', mb: 3 }}>
+              管理此資料庫的群組帳號
+            </Typography>
+
+            {/* Form Card */}
+            <Card sx={{ mb: 3, borderLeft: '4px solid #1976d2' }}>
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>新增帳號</Typography>
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                  <TextField size="small" label="群組名稱" value={form.groupName}
+                    onChange={e => form.setGroupName(e.target.value)}
+                    error={!!form.errors.groupName} helperText={form.errors.groupName}
+                    sx={{ flex: 1 }} />
+                  <TextField size="small" label="帳號" value={form.account}
+                    onChange={e => form.setAccount(e.target.value)}
+                    error={!!form.errors.account} helperText={form.errors.account}
+                    sx={{ flex: 1 }} />
+                  <TextField size="small" label="密碼" type="password" value={form.password}
+                    onChange={e => form.setPassword(e.target.value)}
+                    error={!!form.errors.password} helperText={form.errors.password}
+                    sx={{ flex: 1 }} />
+                  <Button variant="contained" onClick={form.handleSubmit}
+                    sx={{ height: 40, minWidth: 100, alignSelf: 'flex-start' }}>
+                    送出
+                  </Button>
+                </Stack>
+              </CardContent>
+            </Card>
+
+            {/* Table Card */}
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                    帳號列表
+                    <Chip label={`${table.filtered.length} 筆`} size="small" sx={{ ml: 1 }} />
+                  </Typography>
+                  <TextField size="small" placeholder="搜尋…" value={table.filter}
+                    onChange={e => { table.setFilter(e.target.value); table.setPage(0); }}
+                    sx={{ width: 250 }}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start"><span className="material-icons" style={{fontSize:18}}>search</span></InputAdornment>
+                    }} />
+                </Box>
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ fontWeight: 600, color: '#555' }}>群組名稱</TableCell>
+                        <TableCell sx={{ fontWeight: 600, color: '#555' }}>帳號</TableCell>
+                        <TableCell sx={{ fontWeight: 600, color: '#555' }}>創建者</TableCell>
+                        <TableCell sx={{ fontWeight: 600, color: '#555' }}>創建時間</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {table.paged.map(row => (
+                        <TableRow key={row.id} hover sx={{ '&:last-child td': { border: 0 } }}>
+                          <TableCell>
+                            <Chip label={row.groupName} size="small" variant="outlined"
+                              sx={{ borderColor: '#1976d2', color: '#1976d2' }} />
+                          </TableCell>
+                          <TableCell sx={{ fontFamily: 'monospace' }}>{row.account}</TableCell>
+                          <TableCell>{row.createdBy}</TableCell>
+                          <TableCell sx={{ color: '#888' }}>{row.createdAt}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+                <TablePagination component="div" count={table.filtered.length} page={table.page}
+                  onPageChange={(_, p) => table.setPage(p)}
+                  rowsPerPage={table.rowsPerPage} rowsPerPageOptions={[20]}
+                  labelDisplayedRows={({from, to, count}) => `${from}–${to} / 共 ${count} 筆`} />
+              </CardContent>
+            </Card>
+          </>
+        )}
+      </Box>
+
+      <Snackbar open={form.snackbar.open} autoHideDuration={3000}
+        onClose={() => form.setSnackbar({...form.snackbar, open: false})}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity={form.snackbar.severity} variant="filled">{form.snackbar.message}</Alert>
+      </Snackbar>
+    </Box>
+  );
+}
+
+// ================================================================
+// VARIANT C — Compact Single-Page with Tabs
+// Everything on one screen: DB selector as tabs across the top,
+// form collapses into a dialog triggered by a FAB, table is the
+// hero element taking max screen space
+// ================================================================
+function VariantC() {
+  const [selectedDb, setSelectedDb] = React.useState(0);
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const form = useFormState();
+  const table = useTableState();
+
+  const handleSubmitAndClose = () => {
+    form.handleSubmit();
+    if (!form.errors.groupName && !form.errors.account && !form.errors.password) {
+      // Check if snackbar will be success
+      const dup = MOCK_ROWS.find(r => r.groupName === form.groupName.trim() && r.account === form.account.trim());
+      if (!dup && form.groupName.trim() && form.account.trim() && form.password.trim()) {
+        setDialogOpen(false);
+      }
+    }
+  };
+
+  return (
+    <Box sx={{ minHeight: '100vh', bgcolor: '#fafafa' }}>
+      {/* Compact top bar */}
+      <AppBar position="static" elevation={0} sx={{ bgcolor: '#fff', borderBottom: '1px solid #e0e0e0' }}>
+        <Toolbar variant="dense">
+          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#333', mr: 4 }}>
+            Operation Tools
+          </Typography>
+
+          {/* DB as tabs */}
+          <Tabs value={selectedDb} onChange={(_, v) => setSelectedDb(v)}
+            sx={{ flexGrow: 1 }}
+            TabIndicatorProps={{ sx: { bgcolor: '#1976d2', height: 3 } }}>
+            {MOCK_DBS.map(db => (
+              <Tab key={db.id} label={db.name}
+                icon={<span className="material-icons" style={{fontSize:16}}>storage</span>}
+                iconPosition="start"
+                sx={{ fontSize: 12, minHeight: 48, textTransform: 'none' }} />
+            ))}
+          </Tabs>
+
+          <Chip size="small" avatar={<Avatar sx={{ width: 24, height: 24 }}>K</Avatar>}
+            label={MOCK_USER} variant="outlined" />
+        </Toolbar>
+      </AppBar>
+
+      {/* Main: table-dominant */}
+      <Box sx={{ p: 2, maxWidth: 1200, mx: 'auto' }}>
+        {/* Stats bar */}
+        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+          <Paper sx={{ px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <span className="material-icons" style={{ color: '#1976d2', fontSize: 20 }}>dns</span>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>{MOCK_DBS[selectedDb].name}</Typography>
+          </Paper>
+          <Paper sx={{ px: 2, py: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <span className="material-icons" style={{ color: '#4caf50', fontSize: 20 }}>group</span>
+            <Typography variant="body2">{table.filtered.length} 筆帳號</Typography>
+          </Paper>
+          <Box sx={{ flexGrow: 1 }} />
+          <TextField size="small" placeholder="搜尋群組名稱或帳號…" value={table.filter}
+            onChange={e => { table.setFilter(e.target.value); table.setPage(0); }}
+            sx={{ width: 280 }}
+            InputProps={{
+              startAdornment: <InputAdornment position="start"><span className="material-icons" style={{fontSize:18}}>search</span></InputAdornment>
+            }} />
+        </Box>
+
+        {/* Full-width table */}
+        <Paper variant="outlined">
+          <TableContainer sx={{ maxHeight: 'calc(100vh - 200px)' }}>
+            <Table stickyHeader size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: '#fafafa' }}>#</TableCell>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: '#fafafa' }}>群組名稱</TableCell>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: '#fafafa' }}>帳號</TableCell>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: '#fafafa' }}>創建者</TableCell>
+                  <TableCell sx={{ fontWeight: 700, bgcolor: '#fafafa' }}>創建時間</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {table.paged.map((row, i) => (
+                  <TableRow key={row.id} hover>
+                    <TableCell sx={{ color: '#aaa' }}>{table.page * table.rowsPerPage + i + 1}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box sx={{ width: 8, height: 8, borderRadius: '50%',
+                          bgcolor: ['#1976d2','#e91e63','#4caf50','#ff9800','#9c27b0','#00bcd4'][
+                            row.groupName.charCodeAt(0) % 6
+                          ]
+                        }} />
+                        {row.groupName}
+                      </Box>
+                    </TableCell>
+                    <TableCell sx={{ fontFamily: '"Roboto Mono", monospace', fontSize: 13 }}>{row.account}</TableCell>
+                    <TableCell>{row.createdBy}</TableCell>
+                    <TableCell sx={{ color: '#888', fontSize: 12 }}>{row.createdAt}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination component="div" count={table.filtered.length} page={table.page}
+            onPageChange={(_, p) => table.setPage(p)}
+            rowsPerPage={table.rowsPerPage} rowsPerPageOptions={[20]}
+            labelDisplayedRows={({from, to, count}) => `${from}–${to} / 共 ${count} 筆`} />
+        </Paper>
+      </Box>
+
+      {/* FAB to open add dialog */}
+      <Tooltip title="新增帳號" placement="left">
+        <Fab color="primary" sx={{ position: 'fixed', right: 32, bottom: 80 }}
+          onClick={() => setDialogOpen(true)}>
+          <span className="material-icons">add</span>
+        </Fab>
+      </Tooltip>
+
+      {/* Add dialog */}
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontWeight: 600 }}>新增帳號</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField fullWidth size="small" label="群組名稱" value={form.groupName}
+              onChange={e => form.setGroupName(e.target.value)}
+              error={!!form.errors.groupName} helperText={form.errors.groupName} />
+            <TextField fullWidth size="small" label="帳號" value={form.account}
+              onChange={e => form.setAccount(e.target.value)}
+              error={!!form.errors.account} helperText={form.errors.account} />
+            <TextField fullWidth size="small" label="密碼" type="password" value={form.password}
+              onChange={e => form.setPassword(e.target.value)}
+              error={!!form.errors.password} helperText={form.errors.password} />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setDialogOpen(false)}>取消</Button>
+          <Button variant="contained" onClick={handleSubmitAndClose}>送出</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Snackbar open={form.snackbar.open} autoHideDuration={3000}
+        onClose={() => form.setSnackbar({...form.snackbar, open: false})}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity={form.snackbar.severity} variant="filled">{form.snackbar.message}</Alert>
+      </Snackbar>
+    </Box>
+  );
+}
+
+// ── Variant Switcher ──
+const VARIANTS = [
+  { key: 'A', name: 'Classic Top-Down', component: VariantA },
+  { key: 'B', name: 'Sidebar Dashboard', component: VariantB },
+  { key: 'C', name: 'Tabs + FAB Dialog', component: VariantC },
+];
+
+function PrototypeSwitcher({ current, onChange }) {
+  const idx = VARIANTS.findIndex(v => v.key === current);
+  const prev = VARIANTS[(idx - 1 + VARIANTS.length) % VARIANTS.length].key;
+  const next = VARIANTS[(idx + 1) % VARIANTS.length].key;
+
+  React.useEffect(() => {
+    const handler = (e) => {
+      if (['INPUT','TEXTAREA'].includes(e.target.tagName) || e.target.isContentEditable) return;
+      if (e.key === 'ArrowLeft') onChange(prev);
+      if (e.key === 'ArrowRight') onChange(next);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [prev, next]);
+
+  return (
+    <div className="prototype-switcher">
+      <button onClick={() => onChange(prev)}>◀</button>
+      <span className="label">{current} — {VARIANTS[idx].name}</span>
+      <button onClick={() => onChange(next)}>▶</button>
+    </div>
+  );
+}
+
+function App() {
+  const params = new URLSearchParams(window.location.search);
+  const [variant, setVariant] = React.useState(params.get('variant') || 'A');
+
+  const changeVariant = (v) => {
+    setVariant(v);
+    const url = new URL(window.location);
+    url.searchParams.set('variant', v);
+    window.history.replaceState({}, '', url);
+  };
+
+  const V = VARIANTS.find(v => v.key === variant)?.component || VariantA;
+
+  return (
+    <>
+      <V />
+      <PrototypeSwitcher current={variant} onChange={changeVariant} />
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

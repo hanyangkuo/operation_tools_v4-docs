@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8">
+    <title>AI-Driven Development: 重塑開發工作流</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reset.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/theme/night.min.css" id="theme">
+    <style>
+        .box { background: #222; padding: 20px; border-radius: 10px; font-size: 28px; line-height: 1.4; }
+        .highlight-red { color: #ff5252; font-weight: bold; }
+        .highlight-green { color: #4caf50; font-weight: bold; }
+        .demo-time { color: #ff9800; font-weight: bold; font-size: 1.2em; margin-top: 30px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: left; font-size: 26px; }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+
+            <!-- Slide 1: Title -->
+            <section>
+                <h1>AI-Driven Development</h1>
+                <h3>重塑開發工作流：掌握邊界控制與架構思維</h3>
+                <p>
+                    <small>Operation Tools 開發實戰與反思</small>
+                </p>
+            </section>
+
+            <!-- Slide 2: The Origin -->
+            <section>
+                <h2>共同的出發點：模糊的 Spec</h2>
+                <div class="box" style="text-align: left;">
+                    "一個 SPA Spring Boot 專案..."<br>
+                    "可以 config 多組 Oracle DB..."<br>
+                    "從 Oracle DB 撈出群組名稱... 不顯示密碼..."<br>
+                    "密碼用 AES256 加密..."
+                </div>
+                <p class="fragment" style="margin-top: 30px;">
+                    在我們前幾次讓 AI 開發的嘗試中，我們都用了相同的工具<br>
+                    (<code>/grill-me</code>, <code>/prototype</code>, <code>/to-tickets</code>)...
+                </p>
+                <h3 class="fragment highlight-red">但前幾次都迎來了災難性的失敗。</h3>
+            </section>
+
+            <!-- Slide 3: The Failures -->
+            <section>
+                <h2>早期嘗試的血淚教訓</h2>
+                <ul style="font-size: 32px; line-height: 1.6; text-align: left;">
+                    <li class="fragment"><b>資源失控：</b>開發超過 2 小時，消耗海量 Token。</li>
+                    <li class="fragment"><b>Bug 叢生：</b>牽一髮動全身，改了後端壞了前端。</li>
+                </ul>
+                <h4 class="fragment" style="margin-top: 30px; color: #ff9800;">雷區一：無止盡的過度設計 (Over-engineering)</h4>
+                <p class="fragment" style="font-size: 28px; text-align: left; margin-left: 40px;">
+                    AI 很容易把架構想得太複雜。在早期的討論中，AI 偷偷引入了 Keycloak BFF、分散式交易、對帳佇列等企業級架構，導致實作超出負荷。
+                </p>
+            </section>
+
+            <!-- Slide 4: Vertical Slicing Trap -->
+            <section>
+                <h2>早期嘗試的血淚教訓</h2>
+                <h4 style="color: #ff9800;">雷區二：「垂直切片 (Vertical Slices)」的死穴</h4>
+                <p style="font-size: 28px; text-align: left;">
+                    預設的 <code>/to-tickets</code> 會切出包含「DB + API + UI」的垂直功能票。
+                </p>
+                <div class="grid-2 fragment">
+                    <div class="box">
+                        <span class="highlight-red">單一 AI 執行</span><br>
+                        Context Window 被各種前後端檔案塞爆，AI 記憶體超載開始胡言亂語。
+                    </div>
+                    <div class="box">
+                        <span class="highlight-red">多 AI 平行執行</span><br>
+                        所有 AI 都在搶著改 <code>App.tsx</code> 和 <code>Controller</code>，爆發無解的 Merge Conflicts。
+                    </div>
+                </div>
+            </section>
+
+            <!-- Slide 5: The Turning Point 1 -->
+            <section>
+                <h2>最終版破局關鍵一：殘酷的減法</h2>
+                <p style="font-size: 28px; text-align: left;">在 Grill 與 Prototype 階段，人類必須扮演拉住韁繩的「架構師」。<br>確保 MVP 極簡，讓 AI 保持思緒清晰。</p>
+                <div class="box fragment" style="text-align: left;">
+                    <b>我們果斷決定的「不」做：</b><br>
+                    <span style="color: #bbb;">❌ 不做真實 Auth</span> → <span class="highlight-green">Mock UserContext</span><br>
+                    <span style="color: #bbb;">❌ 不做複雜狀態管理</span> → <span class="highlight-green">純 fetch API</span><br>
+                    <span style="color: #bbb;">❌ 不做 Server 端分頁</span> → <span class="highlight-green">Client-side 處理</span>
+                </div>
+                <div class="demo-time fragment">👉 Demo 時間：展示用過即丟的 Prototype 👈</div>
+            </section>
+
+            <!-- Slide 6: The Turning Point 2 -->
+            <section>
+                <h2>最終版破局關鍵二：物理隔離切票</h2>
+                <p style="font-size: 28px; text-align: left;">
+                    人類的刻意介入：強迫打破 <code>/to-tickets</code> 的垂直切片慣例。<br>
+                    下達指令：<b>「必須將票嚴格分成 frontend 與 backend 兩群，避免改到同一檔案。」</b>
+                </p>
+                <pre style="margin-top: 20px;"><code data-trim data-noescape style="font-size: 16px; line-height: 1.15;">
+┌──────────┐     ┌──────────┐
+│ Ticket01 │────▶│ Ticket02 │──┐ Backend Session (無干擾)
+│ BE 骨架  │     │ BE API   │  │
+└──────────┘     └──────────┘  │
+                               ▼
+                         ┌──────────┐
+                         │ Ticket05 │ Integration Session
+                         │ 整合驗證 │
+                         └──────────┘
+┌──────────┐     ┌──────────┐  ▲
+│ Ticket03 │────▶│ Ticket04 │──┘ Frontend Session (無干擾)
+│ FE 骨架  │     │ FE 互動  │
+└──────────┘     └──────────┘
+                </code></pre>
+            </section>
+
+            <!-- Slide 7: Result -->
+            <section>
+                <h2>極速交付：從 2 小時到 20 分鐘</h2>
+                <ul style="font-size: 32px; line-height: 1.6; text-align: left;">
+                    <li class="fragment">Backend Session 專心處理後端，Frontend Session 平行處理前端。</li>
+                    <li class="fragment"><b>效益：</b>零檔案衝突、Context 大幅瘦身、Token 成本銳減。</li>
+                    <li class="fragment">最後靠 Integration Session 完美接合。</li>
+                </ul>
+                <div class="demo-time fragment">👉 Demo 時間：展示最終專案結構與成果 👈</div>
+            </section>
+
+            <!-- Slide 8: Iron Rules -->
+            <section>
+                <h2>如何避免 AI 再次暴走？<br>建立專案「開發鐵律」</h2>
+                <p style="font-size: 28px; text-align: left;">
+                    將團隊的做事標準寫入專案根目錄的 <code>CLAUDE.md</code> 或 <code>CONTEXT.md</code>，<br>
+                    讓 AI 每次啟動都受到邊界約束，根絕過度設計。
+                </p>
+                <div class="box fragment" style="font-size: 24px; text-align: left;">
+                    <span style="color: #ff9800; font-weight: bold;"># 開發鐵律範例</span><br><br>
+                    1. <b>永遠先做 MVP：</b> 所有新功能必須先規劃 Phase 1 (核心業務) 與 Phase 2 (外圍整合)。<br><br>
+                    2. <b>禁止過度設計：</b> 除非人類明確要求，否則不准自行引入微服務架構或複雜的 Message Queue。<br><br>
+                    3. <b>套用公司標準：</b> 嚴禁自行發明 Auth 邏輯！實作認證時，必須直接套用 <code>reference-code/KeycloakFilter.java</code> 範本。
+                </div>
+                <p class="fragment highlight-green" style="margin-top: 20px; font-size: 28px;">
+                    效益：連最難的企業級 OIDC 認證，都從「發明架構(1小時)」降維成「複製貼上(1分鐘)」。
+                </p>
+            </section>
+
+            <!-- Slide 9: Takeaways -->
+            <section>
+                <h2>總結：人類工程師的新價值</h2>
+                <ol style="font-size: 30px; line-height: 1.6; text-align: left;">
+                    <li class="fragment"><b>掌控架構邊界：</b>AI 很容易把事情複雜化，我們必須守住 MVP 的底線。</li>
+                    <li class="fragment"><b>改變切票思維：</b>讓多個 Agent 平行協作的前提，是創造「實體目錄隔離」的工作指派。</li>
+                    <li class="fragment"><b>角色轉換：</b>我們不再是敲鍵盤寫 Code 的機器，而是引導 AI 協作的「系統分析師 (SA)」與「專案經理 (PM)」。</li>
+                </ol>
+            </section>
+            
+            <section>
+                <h1>Q & A</h1>
+                <h3>擁抱 AI 開發新模式</h3>
+            </section>
+
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.js"></script>
+    <script>
+        Reveal.initialize({
+            hash: true,
+            transition: 'slide'
+        });
+    </script>
+</body>
+</html>

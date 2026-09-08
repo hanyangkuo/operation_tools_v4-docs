@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<title>Operation Tools Backend — Logic Prototype (THROWAWAY)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f8f9fa; color: #1a1a2e; line-height: 1.5; }
+
+  .header { background: #1a237e; color: #fff; padding: 20px 32px; }
+  .header h1 { font-size: 22px; font-weight: 600; }
+  .header p { font-size: 13px; opacity: 0.8; margin-top: 4px; }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+  .columns { display: grid; grid-template-columns: 400px 1fr; gap: 24px; align-items: start; }
+
+  /* Left panel: actions */
+  .actions-panel { position: sticky; top: 24px; }
+  .panel { background: #fff; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); margin-bottom: 16px; overflow: hidden; }
+  .panel-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 12px 16px; background: #f0f0f5; border-bottom: 1px solid #e8e8e8; color: #555; }
+  .panel-body { padding: 16px; }
+
+  /* Buttons */
+  .action-group { margin-bottom: 16px; }
+  .action-group:last-child { margin-bottom: 0; }
+  .action-group label { display: block; font-size: 11px; font-weight: 600; color: #888;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .btn { display: inline-block; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer;
+    font-size: 13px; font-weight: 500; margin: 2px 4px 2px 0; transition: all 0.15s; }
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+  .btn-blue { background: #1976d2; color: #fff; }
+  .btn-green { background: #2e7d32; color: #fff; }
+  .btn-red { background: #c62828; color: #fff; }
+  .btn-orange { background: #e65100; color: #fff; }
+  .btn-gray { background: #616161; color: #fff; }
+  .btn-purple { background: #6a1b9a; color: #fff; }
+
+  /* Input row */
+  .input-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
+  .input-row input, .input-row select { padding: 6px 10px; border: 1px solid #ddd; border-radius: 4px;
+    font-size: 13px; flex: 1; min-width: 100px; }
+  .input-row input:focus, .input-row select:focus { outline: none; border-color: #1976d2; }
+
+  /* Right panel: state */
+  .state-panel { }
+
+  .state-section { margin-bottom: 20px; }
+  .state-section h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #333;
+    display: flex; align-items: center; gap: 8px; }
+  .state-section h3 .badge { font-size: 11px; background: #e3f2fd; color: #1976d2; padding: 2px 8px;
+    border-radius: 99px; font-weight: 600; }
+
+  .state-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .state-table th { text-align: left; padding: 8px 12px; background: #f5f5f5; border-bottom: 2px solid #e0e0e0;
+    font-weight: 600; color: #555; font-size: 12px; }
+  .state-table td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; }
+  .state-table tr:hover td { background: #fafafa; }
+
+  .kv-table { font-size: 13px; }
+  .kv-table .kv-row { display: flex; padding: 6px 0; border-bottom: 1px solid #f0f0f0; }
+  .kv-table .kv-key { width: 140px; font-weight: 600; color: #555; flex-shrink: 0; }
+  .kv-table .kv-val { flex: 1; word-break: break-all; }
+
+  /* Log */
+  .log { font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; max-height: 300px;
+    overflow-y: auto; background: #1a1a2e; color: #a8e6cf; padding: 12px 16px; border-radius: 6px; }
+  .log .entry { margin-bottom: 4px; }
+  .log .timestamp { color: #666; }
+  .log .success { color: #69f0ae; }
+  .log .error { color: #ff5252; }
+  .log .info { color: #82b1ff; }
+  .log .warn { color: #ffd740; }
+
+  .highlight { animation: flash 0.6s ease-out; }
+  @keyframes flash { 0% { background: #fff9c4; } 100% { background: transparent; } }
+
+  /* Tabs for walkthroughs */
+  .tabs { display: flex; gap: 0; border-bottom: 2px solid #e0e0e0; margin-bottom: 16px; }
+  .tab { padding: 10px 20px; font-size: 13px; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -2px; color: #888; transition: all 0.15s; }
+  .tab:hover { color: #333; }
+  .tab.active { color: #1976d2; border-bottom-color: #1976d2; font-weight: 600; }
+
+  .scenario-desc { font-size: 13px; color: #555; margin-bottom: 12px; padding: 12px; background: #f5f7ff;
+    border-radius: 6px; border-left: 3px solid #1976d2; }
+  .step { display: flex; align-items: center; gap: 12px; padding: 8px 12px; margin-bottom: 4px;
+    border-radius: 6px; }
+  .step.done { background: #e8f5e9; }
+  .step.current { background: #e3f2fd; }
+  .step.pending { opacity: 0.5; }
+  .step-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+  .step.done .step-num { background: #4caf50; color: #fff; }
+  .step.current .step-num { background: #1976d2; color: #fff; }
+  .step.pending .step-num { background: #e0e0e0; color: #999; }
+  .step-text { font-size: 13px; flex: 1; }
+  .step .btn { flex-shrink: 0; }
+
+  .divider { height: 1px; background: #e0e0e0; margin: 16px 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔧 Operation Tools — 後端邏輯 Prototype</h1>
+  <p>
+    <b>問題</b>：後端的多 DataSource 路由、AES256 加解密、驗證 + 唯一性檢查、UserContext mock — 這些邏輯組合起來感覺對嗎？<br>
+    點擊按鈕模擬 API 呼叫，觀察 state 變化，特別注意 edge case 和錯誤處理。
+  </p>
+</div>
+
+<div class="container">
+  <div class="columns">
+
+    <!-- LEFT: Actions -->
+    <div class="actions-panel">
+
+      <div class="panel">
+        <div class="panel-title">自由操作</div>
+        <div class="panel-body">
+
+          <div class="action-group">
+            <label>API 1 — 查詢已設定的 DB</label>
+            <button class="btn btn-blue" onclick="api_getDatabases()">GET /api/v1/databases</button>
+          </div>
+
+          <div class="action-group">
+            <label>API 2 — 撈群組列表</label>
+            <div class="input-row">
+              <select id="q-dbId">
+                <option value="">-- 選 DB --</option>
+                <option value="db1">db1</option>
+                <option value="db2">db2</option>
+                <option value="INVALID">INVALID_DB</option>
+              </select>
+            </div>
+            <button class="btn btn-blue" onclick="api_getGroups()">GET /databases/{dbId}/groups</button>
+          </div>
+
+          <div class="action-group">
+            <label>API 3 — 新增帳號</label>
+            <div class="input-row">
+              <select id="c-dbId">
+                <option value="db1">db1</option>
+                <option value="db2">db2</option>
+              </select>
+            </div>
+            <div class="input-row">
+              <input id="c-group" placeholder="群組名稱" value="Admin" />
+              <input id="c-account" placeholder="帳號" value="admin01" />
+              <input id="c-password" placeholder="密碼" value="P@ss1234" />
+            </div>
+            <button class="btn btn-green" onclick="api_createGroup()">POST /databases/{dbId}/groups</button>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="action-group">
+            <label>內部操作（觀察加解密）</label>
+            <div class="input-row">
+              <input id="enc-input" placeholder="要加密的文字" value="mySecretPassword" />
+            </div>
+            <button class="btn btn-purple" onclick="demo_encrypt()">AES256 加密</button>
+            <button class="btn btn-purple" onclick="demo_decrypt()">AES256 解密</button>
+          </div>
+
+          <div class="action-group">
+            <label>系統</label>
+            <button class="btn btn-gray" onclick="resetAll()">🔄 重置所有 State</button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Walkthroughs -->
+      <div class="panel">
+        <div class="panel-title">Guided Walkthroughs</div>
+        <div class="panel-body">
+          <div class="tabs">
+            <div class="tab active" onclick="switchTab(0, this)">Happy Path</div>
+            <div class="tab" onclick="switchTab(1, this)">重複新增</div>
+            <div class="tab" onclick="switchTab(2, this)">驗證失敗</div>
+            <div class="tab" onclick="switchTab(3, this)">跨 DB 隔離</div>
+          </div>
+          <div id="walkthrough-container"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: State -->
+    <div class="state-panel">
+
+      <div class="panel">
+        <div class="panel-title">Application State</div>
+        <div class="panel-body" id="state-display"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">操作日誌</div>
+        <div class="panel-body">
+          <div class="log" id="log"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// PORTABLE LOGIC MODULE — liftable into the real Spring Boot app
+// This models the EXACT function signatures and flow of the
+// backend services. No DOM references here.
+// ═══════════════════════════════════════════════════════════════
+
+const BackendLogic = (() => {
+
+  // ── AES256 Encryption Service ──
+  // In real code: javax.crypto.Cipher AES/CBC/PKCS5Padding + Base64
+  // Here: simulated with a reversible transform to show the concept
+  const AES_KEY = 'myPrototypeAes256KeyForDemo12345'; // 32 bytes for AES-256
+
+  function EncryptionService_encrypt(plainText) {
+    // Simulate: Base64( "AES:" + reverse(plainText) + ":" + key_hash_prefix )
+    const keyHash = AES_KEY.slice(0, 8);
+    return btoa('AES:' + plainText.split('').reverse().join('') + ':' + keyHash);
+  }
+
+  function EncryptionService_decrypt(cipherText) {
+    try {
+      const decoded = atob(cipherText);
+      if (!decoded.startsWith('AES:')) throw new Error('Not AES encrypted');
+      const parts = decoded.split(':');
+      return parts[1].split('').reverse().join('');
+    } catch (e) {
+      throw { status: 500, message: '解密失敗：密文格式不正確' };
+    }
+  }
+
+  // ── DatabaseProperties (from application.yaml) ──
+  const databaseConfigs = [
+    {
+      id: 'db1',
+      name: 'H2 Simulated Oracle (Region A)',
+      url: 'jdbc:h2:mem:oracle_sim_1;MODE=Oracle',
+      username: 'sa',
+      encryptedPassword: EncryptionService_encrypt(''),  // empty password for H2
+    },
+    {
+      id: 'db2',
+      name: 'H2 Simulated Oracle (Region B)',
+      url: 'jdbc:h2:mem:oracle_sim_2;MODE=Oracle',
+      username: 'sa',
+      encryptedPassword: EncryptionService_encrypt(''),
+    },
+  ];
+
+  // ── MultiDataSourceConfig ──
+  // Map<String, JdbcTemplate> — initialized at startup
+  // Here modeled as Map<String, Array<row>>
+  let dataSources = {};
+
+  function MultiDataSourceConfig_init() {
+    dataSources = {};
+    for (const cfg of databaseConfigs) {
+      // Decrypt password to verify config is valid
+      const _decryptedPw = EncryptionService_decrypt(cfg.encryptedPassword);
+      // Initialize empty table (Flyway migration ran)
+      dataSources[cfg.id] = { config: cfg, table_GROUP_ALL: [] };
+    }
+    return { success: true, initializedDbs: Object.keys(dataSources) };
+  }
+
+  function MultiDataSourceConfig_getJdbcTemplate(dbId) {
+    if (!dataSources[dbId]) {
+      throw { status: 404, message: `Database "${dbId}" 不存在於設定中` };
+    }
+    return dataSources[dbId];
+  }
+
+  // ── UserContext (Mock) ──
+  function UserContext_getCurrentUser() {
+    return 'KUO HAN YANG';
+  }
+
+  // ── GroupController + GroupService ──
+
+  // GET /api/v1/databases
+  function getDatabases() {
+    return {
+      status: 200,
+      body: databaseConfigs.map(c => ({ id: c.id, name: c.name })),
+    };
+  }
+
+  // GET /api/v1/databases/{dbId}/groups
+  function getGroups(dbId) {
+    const ds = MultiDataSourceConfig_getJdbcTemplate(dbId);  // may throw 404
+    // SELECT GROUP_NAME, ACCOUNT, CREATED_BY, CREATED_AT FROM GROUP_ALL
+    // (不回傳 PASSWORD)
+    return {
+      status: 200,
+      body: ds.table_GROUP_ALL.map(row => ({
+        id: row.id,
+        groupName: row.GROUP_NAME,
+        account: row.ACCOUNT,
+        // PASSWORD 不回傳
+        createdBy: row.CREATED_BY,
+        createdAt: row.CREATED_AT,
+      })),
+    };
+  }
+
+  // POST /api/v1/databases/{dbId}/groups
+  function createGroup(dbId, request) {
+    // 1. Validate request fields
+    const errors = [];
+    if (!request.groupName || !request.groupName.trim()) {
+      errors.push('群組名稱為必填');
+    } else if (request.groupName.length > 100) {
+      errors.push('群組名稱不能超過 100 字元');
+    }
+    if (!request.account || !request.account.trim()) {
+      errors.push('帳號為必填');
+    } else if (request.account.length > 100) {
+      errors.push('帳號不能超過 100 字元');
+    }
+    if (!request.password || !request.password.trim()) {
+      errors.push('密碼為必填');
+    }
+    if (errors.length > 0) {
+      throw { status: 400, message: errors.join('; ') };
+    }
+
+    // 2. Get DataSource
+    const ds = MultiDataSourceConfig_getJdbcTemplate(dbId);  // may throw 404
+
+    // 3. Uniqueness check: SELECT COUNT(*) FROM GROUP_ALL WHERE GROUP_NAME=? AND ACCOUNT=?
+    const duplicate = ds.table_GROUP_ALL.find(
+      row => row.GROUP_NAME === request.groupName.trim() && row.ACCOUNT === request.account.trim()
+    );
+    if (duplicate) {
+      throw {
+        status: 409,
+        message: `群組「${request.groupName}」+ 帳號「${request.account}」已存在`,
+      };
+    }
+
+    // 4. Encrypt password
+    const encryptedPassword = EncryptionService_encrypt(request.password);
+
+    // 5. Get current user from UserContext
+    const createdBy = UserContext_getCurrentUser();
+
+    // 6. Get current timestamp
+    const createdAt = new Date().toISOString().replace('T', ' ').slice(0, 19);
+
+    // 7. INSERT INTO GROUP_ALL (GROUP_NAME, ACCOUNT, PASSWORD, CREATED_BY, CREATED_AT)
+    const newId = ds.table_GROUP_ALL.length > 0
+      ? Math.max(...ds.table_GROUP_ALL.map(r => r.id)) + 1
+      : 1;
+
+    const newRow = {
+      id: newId,
+      GROUP_NAME: request.groupName.trim(),
+      ACCOUNT: request.account.trim(),
+      PASSWORD: encryptedPassword,
+      CREATED_BY: createdBy,
+      CREATED_AT: createdAt,
+    };
+    ds.table_GROUP_ALL.push(newRow);
+
+    return {
+      status: 201,
+      body: { message: '新增成功', id: newId },
+      _internal: {
+        plainPassword: request.password,
+        encryptedPassword: encryptedPassword,
+        canDecryptBack: EncryptionService_decrypt(encryptedPassword) === request.password,
+      },
+    };
+  }
+
+  // ── Public API ──
+  return {
+    init: MultiDataSourceConfig_init,
+    getDatabases,
+    getGroups,
+    createGroup,
+    encrypt: EncryptionService_encrypt,
+    decrypt: EncryptionService_decrypt,
+    getCurrentUser: UserContext_getCurrentUser,
+    _getState: () => JSON.parse(JSON.stringify(dataSources)),
+    _getConfigs: () => databaseConfigs,
+  };
+})();
+
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE SHELL — thin UI over the logic module
+// ═══════════════════════════════════════════════════════════════
+
+let logEntries = [];
+
+function log(type, text) {
+  const ts = new Date().toLocaleTimeString();
+  logEntries.unshift({ type, text, ts });
+  if (logEntries.length > 100) logEntries.pop();
+  renderLog();
+}
+
+function renderLog() {
+  const el = document.getElementById('log');
+  el.innerHTML = logEntries.map(e =>
+    `<div class="entry"><span class="timestamp">[${e.ts}]</span> <span class="${e.type}">${e.text}</span></div>`
+  ).join('');
+}
+
+function renderState() {
+  const state = BackendLogic._getState();
+  const configs = BackendLogic._getConfigs();
+  const user = BackendLogic.getCurrentUser();
+
+  let html = '';
+
+  // UserContext
+  html += `<div class="state-section">
+    <h3>👤 UserContext</h3>
+    <div class="kv-table">
+      <div class="kv-row"><div class="kv-key">currentUser</div><div class="kv-val">${user}</div></div>
+    </div>
+  </div>`;
+
+  // Database Configs
+  html += `<div class="state-section">
+    <h3>⚙️ DatabaseProperties <span class="badge">${configs.length} 組</span></h3>
+    <table class="state-table">
+      <tr><th>ID</th><th>Name</th><th>URL</th><th>Password (encrypted)</th></tr>
+      ${configs.map(c => `<tr>
+        <td><b>${c.id}</b></td>
+        <td>${c.name}</td>
+        <td style="font-family:monospace;font-size:11px">${c.url}</td>
+        <td style="font-family:monospace;font-size:11px;color:#888;max-width:120px;overflow:hidden;text-overflow:ellipsis">${c.encryptedPassword.slice(0,20)}…</td>
+      </tr>`).join('')}
+    </table>
+  </div>`;
+
+  // DataSource Map
+  html += `<div class="state-section">
+    <h3>🗄️ MultiDataSourceConfig <span class="badge">Map&lt;dbId, JdbcTemplate&gt;</span></h3>`;
+
+  for (const [dbId, ds] of Object.entries(state)) {
+    const rows = ds.table_GROUP_ALL;
+    html += `<div style="margin-bottom:16px">
+      <h3 style="font-size:13px;">📦 ${dbId} — GROUP_ALL <span class="badge">${rows.length} rows</span></h3>`;
+
+    if (rows.length === 0) {
+      html += `<div style="font-size:13px;color:#999;padding:8px 0;">（空表）</div>`;
+    } else {
+      html += `<table class="state-table">
+        <tr><th>ID</th><th>GROUP_NAME</th><th>ACCOUNT</th><th>PASSWORD (encrypted)</th><th>CREATED_BY</th><th>CREATED_AT</th></tr>
+        ${rows.map(r => `<tr>
+          <td>${r.id}</td>
+          <td>${r.GROUP_NAME}</td>
+          <td style="font-family:monospace">${r.ACCOUNT}</td>
+          <td style="font-family:monospace;font-size:11px;color:#888;max-width:140px;overflow:hidden;text-overflow:ellipsis">${r.PASSWORD.slice(0,24)}…</td>
+          <td>${r.CREATED_BY}</td>
+          <td style="font-size:12px;color:#888">${r.CREATED_AT}</td>
+        </tr>`).join('')}
+      </table>`;
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+
+  document.getElementById('state-display').innerHTML = html;
+}
+
+// ── API action handlers ──
+
+function api_getDatabases() {
+  log('info', '→ GET /api/v1/databases');
+  try {
+    const res = BackendLogic.getDatabases();
+    log('success', `✓ 200 OK — 回傳 ${res.body.length} 組 DB: ${res.body.map(d => d.id).join(', ')}`);
+    log('info', `  回傳內容: ${JSON.stringify(res.body)}`);
+  } catch (e) {
+    log('error', `✗ ${e.status} — ${e.message}`);
+  }
+  renderState();
+}
+
+function api_getGroups() {
+  const dbId = document.getElementById('q-dbId').value;
+  if (!dbId) { log('warn', '⚠ 請先選擇 DB'); return; }
+  log('info', `→ GET /api/v1/databases/${dbId}/groups`);
+  try {
+    const res = BackendLogic.getGroups(dbId);
+    log('success', `✓ 200 OK — 回傳 ${res.body.length} 筆 (不含密碼)`);
+    if (res.body.length > 0) {
+      log('info', `  欄位: ${Object.keys(res.body[0]).join(', ')}`);
+      log('info', `  注意: 回傳中沒有 password 欄位 ✓`);
+    }
+  } catch (e) {
+    log('error', `✗ ${e.status} — ${e.message}`);
+  }
+  renderState();
+}
+
+function api_createGroup() {
+  const dbId = document.getElementById('c-dbId').value;
+  const groupName = document.getElementById('c-group').value;
+  const account = document.getElementById('c-account').value;
+  const password = document.getElementById('c-password').value;
+
+  log('info', `→ POST /api/v1/databases/${dbId}/groups`);
+  log('info', `  Body: { groupName: "${groupName}", account: "${account}", password: "${password}" }`);
+
+  try {
+    const res = BackendLogic.createGroup(dbId, { groupName, account, password });
+    log('success', `✓ ${res.status} Created — ${res.body.message} (id: ${res.body.id})`);
+    log('info', `  密碼加密: "${password}" → "${res._internal.encryptedPassword.slice(0,30)}…"`);
+    log('info', `  可逆驗證: decrypt 回來 = "${BackendLogic.decrypt(res._internal.encryptedPassword)}" ${res._internal.canDecryptBack ? '✓' : '✗'}`);
+    log('info', `  CREATED_BY: "${BackendLogic.getCurrentUser()}" (from UserContext)`);
+  } catch (e) {
+    log('error', `✗ ${e.status} — ${e.message}`);
+  }
+  renderState();
+}
+
+function demo_encrypt() {
+  const input = document.getElementById('enc-input').value;
+  if (!input) { log('warn', '⚠ 請輸入文字'); return; }
+  const encrypted = BackendLogic.encrypt(input);
+  log('info', `🔒 EncryptionService.encrypt("${input}")`);
+  log('success', `  → "${encrypted}"`);
+}
+
+function demo_decrypt() {
+  const input = document.getElementById('enc-input').value;
+  if (!input) { log('warn', '⚠ 請輸入密文'); return; }
+  try {
+    const decrypted = BackendLogic.decrypt(input);
+    log('info', `🔓 EncryptionService.decrypt("${input.slice(0,30)}…")`);
+    log('success', `  → "${decrypted}"`);
+  } catch (e) {
+    log('error', `✗ ${e.message || e}`);
+  }
+}
+
+function resetAll() {
+  BackendLogic.init();
+  logEntries = [];
+  log('info', '🔄 系統已重置 — MultiDataSourceConfig 重新初始化');
+  renderState();
+  renderWalkthrough();
+}
+
+// ── Walkthroughs ──
+
+const WALKTHROUGHS = [
+  {
+    name: 'Happy Path',
+    desc: '正常流程：查詢 DB 列表 → 選 db1 → 新增一筆帳號 → 查詢列表確認已新增。觀察：密碼在 state 中以加密形式儲存，API 回傳不含密碼。',
+    steps: [
+      { label: '查詢 DB 列表', action: () => api_getDatabases() },
+      { label: '查 db1 的群組列表（應為空）', action: () => { document.getElementById('q-dbId').value='db1'; api_getGroups(); } },
+      { label: '新增帳號到 db1 (Admin/admin01/P@ss1234)', action: () => {
+        document.getElementById('c-dbId').value='db1';
+        document.getElementById('c-group').value='Admin';
+        document.getElementById('c-account').value='admin01';
+        document.getElementById('c-password').value='P@ss1234';
+        api_createGroup();
+      }},
+      { label: '再查 db1 列表（應有 1 筆，不含密碼）', action: () => { document.getElementById('q-dbId').value='db1'; api_getGroups(); } },
+    ],
+  },
+  {
+    name: '重複新增',
+    desc: '嘗試新增一筆已存在的 (群組名稱 + 帳號) 組合。預期：回傳 409 Conflict，資料不變。',
+    steps: [
+      { label: '先新增一筆 (Dev/dev_user)', action: () => {
+        document.getElementById('c-dbId').value='db1';
+        document.getElementById('c-group').value='Dev';
+        document.getElementById('c-account').value='dev_user';
+        document.getElementById('c-password').value='pass123';
+        api_createGroup();
+      }},
+      { label: '再新增相同的 (Dev/dev_user) — 應 409', action: () => {
+        document.getElementById('c-dbId').value='db1';
+        document.getElementById('c-group').value='Dev';
+        document.getElementById('c-account').value='dev_user';
+        document.getElementById('c-password').value='differentPass';
+        api_createGroup();
+      }},
+      { label: '確認列表仍只有原本的那筆', action: () => { document.getElementById('q-dbId').value='db1'; api_getGroups(); } },
+    ],
+  },
+  {
+    name: '驗證失敗',
+    desc: '送出空白欄位、不存在的 DB ID。預期：400 Bad Request 或 404 Not Found。',
+    steps: [
+      { label: '空白群組名稱 — 應 400', action: () => {
+        document.getElementById('c-dbId').value='db1';
+        document.getElementById('c-group').value='';
+        document.getElementById('c-account').value='test';
+        document.getElementById('c-password').value='pass';
+        api_createGroup();
+      }},
+      { label: '全部空白 — 應 400 (多個錯誤)', action: () => {
+        document.getElementById('c-group').value='';
+        document.getElementById('c-account').value='';
+        document.getElementById('c-password').value='';
+        api_createGroup();
+      }},
+      { label: '查詢不存在的 DB — 應 404', action: () => {
+        document.getElementById('q-dbId').value='INVALID';
+        api_getGroups();
+      }},
+    ],
+  },
+  {
+    name: '跨 DB 隔離',
+    desc: '在 db1 新增資料後，查 db2 應該是空的。驗證多 DataSource 之間的資料隔離。',
+    steps: [
+      { label: '在 db1 新增 (Ops/ops_admin)', action: () => {
+        document.getElementById('c-dbId').value='db1';
+        document.getElementById('c-group').value='Ops';
+        document.getElementById('c-account').value='ops_admin';
+        document.getElementById('c-password').value='opsPass';
+        api_createGroup();
+      }},
+      { label: '查 db1 — 應有資料', action: () => { document.getElementById('q-dbId').value='db1'; api_getGroups(); } },
+      { label: '查 db2 — 應為空（隔離）', action: () => { document.getElementById('q-dbId').value='db2'; api_getGroups(); } },
+      { label: '在 db2 也新增一筆 (Ops/ops_admin) — 應成功（不同 DB）', action: () => {
+        document.getElementById('c-dbId').value='db2';
+        document.getElementById('c-group').value='Ops';
+        document.getElementById('c-account').value='ops_admin';
+        document.getElementById('c-password').value='opsPass2';
+        api_createGroup();
+      }},
+    ],
+  },
+];
+
+let currentTab = 0;
+let currentStep = 0;
+
+function switchTab(idx, tabEl) {
+  currentTab = idx;
+  currentStep = 0;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  tabEl.classList.add('active');
+  // Reset state for walkthrough
+  BackendLogic.init();
+  logEntries = [];
+  log('info', `🎬 Walkthrough「${WALKTHROUGHS[idx].name}」— 系統已重置`);
+  renderState();
+  renderWalkthrough();
+}
+
+function renderWalkthrough() {
+  const wt = WALKTHROUGHS[currentTab];
+  let html = `<div class="scenario-desc">${wt.desc}</div>`;
+  wt.steps.forEach((step, i) => {
+    let cls = i < currentStep ? 'done' : i === currentStep ? 'current' : 'pending';
+    html += `<div class="step ${cls}">
+      <div class="step-num">${i < currentStep ? '✓' : i + 1}</div>
+      <div class="step-text">${step.label}</div>
+      ${i === currentStep ? `<button class="btn btn-blue" onclick="executeStep(${i})">執行</button>` : ''}
+    </div>`;
+  });
+  if (currentStep >= wt.steps.length) {
+    html += `<div style="margin-top:12px;padding:10px;background:#e8f5e9;border-radius:6px;font-size:13px;color:#2e7d32;font-weight:500;">
+      ✅ Walkthrough 完成！請觀察右側 State 和 Log 是否符合預期。
+    </div>`;
+  }
+  document.getElementById('walkthrough-container').innerHTML = html;
+}
+
+function executeStep(i) {
+  WALKTHROUGHS[currentTab].steps[i].action();
+  currentStep = i + 1;
+  renderWalkthrough();
+}
+
+// ── Init ──
+BackendLogic.init();
+log('info', '🚀 系統啟動 — MultiDataSourceConfig 初始化完成');
+log('info', '  已初始化 DataSource: db1, db2');
+log('info', '  Flyway migration: V1__create_group_all_table.sql ✓');
+renderState();
+renderWalkthrough();
+</script>
+
+</body>
+</html>
